@@ -1,0 +1,723 @@
+import streamlit as st
+import pandas as pd
+import random
+import base64
+from supabase import create_client
+
+# ===============================
+# 🔐 CONFIGURACIÓN DE BASE DE DATOS
+# ===============================
+SUPABASE_URL = "https://ohswfrjxertuwtsocyhf.supabase.co"
+SUPABASE_KEY = "sb_secret_0DcETvMBG6onZxM_cIf8LQ_4XCsANiB"
+
+def conectar_bd():
+    try: 
+        return create_client(SUPABASE_URL, SUPABASE_KEY)
+    except: 
+        return None
+
+db = conectar_bd()
+
+# ===============================
+# 🖼️ GESTIÓN VISUAL
+# ===============================
+def get_base64_image(image_path):
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except: 
+        return None
+
+img_base64 = get_base64_image("tuvn.png")
+
+# ===============================
+# 🎨 INTERFAZ GRÁFICA MEJORADA (TEXTO NEGRO)
+# ===============================
+st.set_page_config(page_title="Vida Nueva - Guía Prenatal", page_icon="🤰", layout="wide")
+
+st.markdown(f"""
+<style>
+    /* Fondo General */
+    .stApp {{ 
+        background-color: #FDF6EC; 
+    }}
+    
+    /* TODAS LAS LETRAS EN NEGRO ABSOLUTO */
+    html, body, [class*="st-"], p, div, label, span, h1, h2, h3, th, td {{
+        color: #000000 !important;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }}
+
+    /* Contenedor Principal */
+    .main .block-container {{
+        max-width: 850px;
+        padding-top: 2rem;
+    }}
+
+    /* Tarjetas de Preguntas y Formularios */
+    div[data-testid="stForm"], .stForm, .question-card {{
+        background-color: #FFFFFF !important;
+        border: 2px solid #D4A373 !important;
+        border-radius: 25px !important;
+        padding: 35px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05) !important;
+        margin-bottom: 20px;
+    }}
+    
+    .question-text {{
+        font-size: 1.5rem !important;
+        font-weight: 800 !important;
+        line-height: 1.3;
+        margin-bottom: 20px;
+    }}
+
+    .explanation-text {{
+        font-size: 1.1rem;
+        background-color: #FEFAE0;
+        padding: 15px;
+        border-radius: 10px;
+        border-left: 5px solid #D4A373;
+        margin-bottom: 20px;
+    }}
+
+    /* Botones de Selección (Radio) */
+    .stRadio [data-testid="stWidgetLabel"] {{
+        font-size: 1.2rem !important;
+        font-weight: bold !important;
+        margin-bottom: 10px;
+    }}
+
+    /* Botón Principal */
+    div.stButton > button {{
+        background-color: #D4A373 !important; 
+        color: #000000 !important;
+        font-weight: 900 !important;
+        border-radius: 50px !important;
+        padding: 15px 30px !important;
+        border: none !important;
+        transition: 0.3s;
+    }}
+    
+    div.stButton > button:hover {{
+        background-color: #BC8A5F !important;
+        transform: scale(1.02);
+    }}
+
+    /* Tabla de Ranking */
+    .styled-table {{
+        width: 100%;
+        border-collapse: collapse;
+        margin: 25px 0;
+        font-size: 1.1rem;
+    }}
+    .styled-table thead tr {{
+        background-color: #D4A373;
+        text-align: left;
+    }}
+    .styled-table th, .styled-table td {{
+        padding: 12px 15px;
+        border-bottom: 1px solid #EADBC8;
+    }}
+</style>
+""", unsafe_allow_html=True)
+
+# ===============================
+# 🔊 MOTOR DE VOZ
+# ===============================
+def hablar(texto):
+    if texto:
+        t_limpio = texto.replace("'", "").replace("\n", " ")
+        st.components.v1.html(f"""
+            <script>
+                window.speechSynthesis.cancel();
+                var m = new SpeechSynthesisUtterance('{t_limpio}');
+                m.lang = 'es-ES'; window.speechSynthesis.speak(m);
+            </script>
+        """, height=0)
+
+# ===============================
+# 📚 BANCO DE PREGUNTAS EXPLICATIVAS
+# ===============================
+BANCO_EDUCATIVO = [
+    {
+        "q": "¿Qué significa si de repente ves luces brillantes o se te hinchan mucho las manos?",
+        "exp": "Durante el embarazo, ver 'estrellitas' o notar hinchazón repentina no es solo cansancio. Es una señal de alerta importante.",
+        "opts": ["Es una señal de que la presión arterial está muy alta", "Es normal por el peso del bebé"],
+        "corr": "Es una señal de que la presión arterial está muy alta",
+        "fb": "¡Muy bien! Esto se llama Preeclampsia. Si te pasa, debes ir al médico rápido porque la presión alta puede afectar tu salud y la del bebé."
+    },
+    {
+        "q": "Si notas que tu bebé deja de moverse como siempre, ¿qué debes hacer?",
+        "exp": "El movimiento es la forma en que el bebé te dice que está recibiendo buen oxígeno y alimento.",
+        "opts": ["Esperar al día siguiente para ver si se mueve", "Ir a urgencias de inmediato para que lo revisen"],
+        "corr": "Ir a urgencias de inmediato para que lo revisen",
+        "fb": "¡Correcto! Si el bebé no se mueve, podría estar en peligro (hipoxia). Es mejor prevenir y que un profesional escuche su corazoncito."
+    },
+    {
+        "q": "Si sale un líquido transparente (como agua) con olor a cloro, ¿qué está pasando?",
+        "exp": "El bebé vive dentro de una bolsa con líquido. Si ese líquido sale, significa que la 'fuente' se rompió.",
+        "opts": ["Se rompió la fuente y el bebé ya no está protegido", "Es una pérdida de orina normal por el peso"],
+        "corr": "Se rompió la fuente y el bebé ya no está protegido",
+        "fb": "¡Exacto! Al romperse la fuente, el bebé queda expuesto a bacterias. Debes ir al hospital aunque no tengas dolor."
+    },
+    {
+        "q": "¿Por qué es tan importante tomar Ácido Fólico en los primeros meses?",
+        "exp": "El ácido fólico es como un 'ladrillo' fundamental para construir el cuerpo del bebé.",
+        "opts": ["Para que al bebé se le forme bien su cerebro y su espalda", "Para que la mamá no tenga náuseas"],
+        "corr": "Para que al bebé se le forme bien su cerebro y su espalda",
+        "fb": "¡Así es! Previene problemas graves en la columna y el cerebro (tubo neural). ¡Es un seguro de vida para su desarrollo!"
+    },
+    {
+        "q": "¿Qué es el 'Calostro' o la primera leche que sale del pecho?",
+        "exp": "Es un líquido amarillento que sale justo después del parto, antes de la leche blanca.",
+        "opts": ["Es la primera vacuna natural llena de defensas", "Es leche que todavía no sirve y hay que tirarla"],
+        "corr": "Es la primera vacuna natural llena de defensas",
+        "fb": "¡Correcto! El calostro es 'oro líquido'. Tiene todo lo que el bebé necesita para no enfermarse en sus primeros días."
+    }
+]
+
+# --- ESTADO DE SESIÓN ---
+if "fase" not in st.session_state:
+    st.session_state.update({
+        "fase": "login", 
+        "user": "", 
+        "pts": 0, 
+        "idx": 0, 
+        "examen": [], 
+        "resp": False, 
+        "fb": "",
+        "ranking": [
+            {"Nombre": "María L.", "Puntos": 100},
+            {"Nombre": "Ana P.", "Puntos": 90},
+            {"Nombre": "Carmen R.", "Puntos": 80}
+        ]
+    })
+
+# --- FLUJO DE LA APP ---
+
+# 1. LOGIN
+if st.session_state.fase == "login":
+    st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+    if img_base64:
+        st.markdown(f'<img src="data:image/png;base64,{img_base64}" width="150">', unsafe_allow_html=True)
+    st.markdown("<h1>Bienvenida a Vida Nueva</h1><p>Aprende a cuidar de ti y de tu bebé de forma fácil.</p></div>", unsafe_allow_html=True)
+    
+    with st.form("login"):
+        nombre = st.text_input("Escribe tu nombre completo:")
+        correo = st.text_input("Escribe tu correo (para tu diploma):")
+        if st.form_submit_button("EMPEZAR CURSO"):
+            if nombre:
+                st.session_state.user = nombre
+                st.session_state.examen = random.sample(BANCO_EDUCATIVO, len(BANCO_EDUCATIVO))
+                st.session_state.fase = "test"
+                st.rerun()
+            else:
+                st.warning("Por favor, dinos tu nombre para empezar.")
+
+# 2. TEST EDUCATIVO
+elif st.session_state.fase == "test":
+    actual = st.session_state.examen[st.session_state.idx]
+    
+    st.write(f"🌸 **Progreso: Pregunta {st.session_state.idx + 1} de {len(st.session_state.examen)}**")
+    st.progress((st.session_state.idx + 1) / len(st.session_state.examen))
+    
+    # Contenedor de pregunta
+    st.markdown(f"""
+    <div class="question-card">
+        <p class="explanation-text">💡 <b>Para entender mejor:</b> {actual['exp']}</p>
+        <p class="question-text">{actual['q']}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    opcion = st.radio("Selecciona la respuesta que creas correcta:", actual['opts'], key=f"p{st.session_state.idx}", disabled=st.session_state.resp)
+
+    if not st.session_state.resp:
+        if st.button("COMPROBAR RESPUESTA"):
+            es_correcta = (opcion == actual['corr'])
+            if es_correcta:
+                st.session_state.pts += 20
+                st.success(actual['fb'])
+            else:
+                st.error(actual['fb'])
+            
+            st.session_state.fb = actual['fb']
+            st.session_state.resp = True
+            hablar(actual['fb'])
+            st.rerun()
+    else:
+        if st.button("SIGUIENTE PREGUNTA ➡️"):
+            st.session_state.idx += 1
+            st.session_state.resp = False
+            if st.session_state.idx >= len(st.session_state.examen):
+                st.session_state.fase = "final"
+            st.rerun()
+
+# 3. FINAL Y RANKING
+elif st.session_state.fase == "final":
+    st.balloons()
+    st.markdown(f"<div class='question-card' style='text-align:center;'><h1>¡Excelente trabajo, {st.session_state.user}!</h1>", unsafe_allow_html=True)
+    st.metric("TU PUNTAJE", f"{st.session_state.pts} Puntos")
+    st.write("Ahora estás más preparada para cuidar de tu salud y la de tu bebé.")
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Ranking
+    st.markdown("### 🏆 Cuadro de Honor (Ranking)")
+    # Agregar al usuario actual al ranking para mostrarlo
+    nuevo_ranking = st.session_state.ranking + [{"Nombre": st.session_state.user, "Puntos": st.session_state.pts}]
+    df_ranking = pd.DataFrame(nuevo_ranking).sort_values(by="Puntos", ascending=False)
+    
+    st.table(df_ranking)
+    
+    if st.button("VOLVER A EMPEZAR"):
+        st.session_state.clear()
+        st.rerun()
+---------------------------------------------------------------------------------
+import streamlit as st
+
+import pandas as pd
+
+import random
+
+import base64
+
+from supabase import create_client
+
+
+
+# ===============================
+
+# 🔐 CONFIGURACIÓN DE BASE DE DATOS
+
+# ===============================
+
+SUPABASE_URL = "https://ohswfrjxertuwtsocyhf.supabase.co"
+
+SUPABASE_KEY = "sb_secret_0DcETvMBG6onZxM_cIf8LQ_4XCsANiB"
+
+
+
+def conectar_bd():
+
+    try: 
+
+        return create_client(SUPABASE_URL, SUPABASE_KEY)
+
+    except: 
+
+        return None
+
+
+
+db = conectar_bd()
+
+
+
+# ===============================
+
+# 🖼️ GESTIÓN VISUAL (LOGO)
+
+# ===============================
+
+def get_base64_image(image_path):
+
+    try:
+
+        with open(image_path, "rb") as img_file:
+
+            return base64.b64encode(img_file.read()).decode()
+
+    except: 
+
+        return None
+
+
+
+img_base64 = get_base64_image("tuvn.png")
+
+
+
+# ===============================
+
+# 🎨 INTERFAZ CON TEXTOS 100% NEGROS
+
+# ===============================
+
+st.set_page_config(page_title="Vida Nueva", page_icon="🤰", layout="wide")
+
+
+
+st.markdown(f"""
+
+<style>
+
+    /* Fondo General */
+
+    .stApp {{ 
+
+        background-color: #2C231E; 
+
+    }}
+
+    
+
+    /* FUERZA BRUTA: TODAS LAS LETRAS EN NEGRO */
+
+    /* Aplicado a párrafos, etiquetas, botones y radio buttons */
+
+    html, body, [class*="st-"], p, div, label, span, h1, h2, h3 {{
+
+        color: #000000 !important;
+
+        font-weight: 600; /* Un poco más de grosor para que resalten */
+
+    }}
+
+
+
+    /* Contenedor Principal */
+
+    .main .block-container {{
+
+        max-width: 750px;
+
+        padding-top: 2rem;
+
+    }}
+
+
+
+    /* UNIFICACIÓN DE FORMULARIOS (Login y Preguntas) */
+
+    div[data-testid="stForm"], .stForm {{
+
+        background-color: #EADBC8 !important; /* Fondo crema para que el negro resalte */
+
+        border: 3px solid #A68A71 !important;
+
+        border-radius: 20px !important;
+
+        padding: 30px !important;
+
+    }}
+
+    
+
+    /* Inputs de Texto */
+
+    input {{
+
+        background-color: #FFFFFF !important;
+
+        color: #000000 !important;
+
+        border: 1px solid #1B1512 !important;
+
+    }}
+
+
+
+    /* TARJETA DE PREGUNTA */
+
+    .question-card {{
+
+        background-color: #F5EFE6; 
+
+        padding: 30px; 
+
+        border-radius: 15px;
+
+        border-left: 12px solid #A68A71; 
+
+        margin-bottom: 25px;
+
+        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+
+    }}
+
+    
+
+    .question-text {{
+
+        color: #000000 !important; 
+
+        font-size: clamp(1.3rem, 4vw, 1.7rem) !important;
+
+        font-weight: 900 !important;
+
+        line-height: 1.4;
+
+    }}
+
+
+
+    /* CABECERA */
+
+    .header-card {{
+
+        text-align: center; 
+
+        background: #EADBC8; 
+
+        padding: 25px;
+
+        border-radius: 20px; 
+
+        border-bottom: 5px solid #A68A71;
+
+        margin-bottom: 30px;
+
+    }}
+
+    
+
+    .header-card h1 {{
+
+        color: #000000 !important;
+
+        font-weight: 900 !important;
+
+    }}
+
+
+
+    /* BOTONES */
+
+    div.stButton > button {{
+
+        background-color: #1B1512 !important; 
+
+        color: #FFFFFF !important; /* Texto blanco solo en botón para contraste de acción */
+
+        font-weight: 900 !important;
+
+        height: 60px !important;
+
+        width: 100% !important;
+
+        border-radius: 15px !important; 
+
+    }}
+
+    
+
+    div.stButton > button:hover {{
+
+        background-color: #A68A71 !important;
+
+        color: #000000 !important;
+
+    }}
+
+
+
+    /* ESTILO DE ALERTAS (ÉXITO/INFO) EN NEGRO */
+
+    .stAlert p {{
+
+        color: #000000 !important;
+
+        font-weight: 700 !important;
+
+    }}
+
+</style>
+
+""", unsafe_allow_html=True)
+
+
+
+# ===============================
+
+# 🔊 MOTOR DE VOZ
+
+# ===============================
+
+def hablar(texto):
+
+    if texto:
+
+        t_limpio = texto.replace("'", "").replace("\n", " ")
+
+        st.components.v1.html(f"""
+
+            <script>
+
+                window.speechSynthesis.cancel();
+
+                var m = new SpeechSynthesisUtterance('{t_limpio}');
+
+                m.lang = 'es-ES'; window.speechSynthesis.speak(m);
+
+            </script>
+
+        """, height=0)
+
+
+
+# ===============================
+
+# 📚 BANCO DE 30 PREGUNTAS
+
+# ===============================
+
+BANCO_PRO = [
+
+    {"q": "Si tus manos se hinchan de pronto y ves luces brillantes (fosfenos), ¿qué mensaje técnico te envía tu cuerpo?", "opts": ["Tu presión arterial está forzando tus vasos sanguíneos", "Es el cansancio normal por el peso del bebé"], "corr": "Tu presión arterial está forzando tus vasos sanguíneos", "bien": "¡Excelente, mamá! Tienes una conexión increíble con tu cuerpo. Esos destellos nos avisan que debemos cuidar tu presión arterial ahora mismo.", "mal": "Tranquila, aquí estamos para aprender. Ver luces no es cansancio, es una señal valiosa de tu cuerpo pidiendo que revisemos tu presión de inmediato."},
+
+    {"q": "Alrededor de la semana 26, el médico aplicará la vacuna dTpa. ¿Cuál es su misión biológica?", "opts": ["Transferir defensas contra la tos ferina al bebé", "Evitar que tú tengas una gripe común"], "corr": "Transferir defensas contra la tos ferina al bebé", "bien": "¡Qué buena decisión! Estás dándole a tu pequeño un escudo de amor y salud antes de que nazca.", "mal": "No te preocupes, lo importante es saberlo ahora: esta vacuna es como una armadura de defensas que tú le heredas a tu bebé."},
+
+    {"q": "Si sientes un dolor agudo en la boca del estómago (epigastralgia), ¿por qué los médicos lo consideran una urgencia?", "opts": ["Indica que la presión está afectando tu hígado", "Es una acidez común por el crecimiento del útero"], "corr": "Indica que la presión está afectando tu hígado", "bien": "¡Muy bien! Sabes distinguir lo importante. Ese dolor es un aviso de que tus órganos necesitan atención por la presión.", "mal": "Es fácil confundirlo con acidez, pero en el embarazo ese dolor es una alerta de que tu hígado está bajo esfuerzo. ¡Confía en tu instinto!"},
+
+    {"q": "Si dejas de sentir los movimientos de tu bebé por un tiempo inusual, ¿qué riesgo técnico evaluamos?", "opts": ["Hipoxia (su nivel de oxígeno ha bajado)", "Que el bebé está en un ciclo de sueño profundo"], "corr": "Hipoxia (su nivel de oxígeno ha bajado)", "bien": "¡Exacto! El movimiento es la forma en que tu bebé te dice 'estoy bien'. ¡Sigue así de atenta!", "mal": "Entiendo que asuste, pero es mejor prevenir. Si el bebé no se mueve, es su forma de pedir ayuda porque podría faltarle un poco de oxígeno."},
+
+    {"q": "Al notar salida de líquido transparente con olor a cloro, ¿qué está ocurriendo técnicamente?", "opts": ["Ruptura de membranas (se rompió la fuente)", "Una pérdida urinaria por la presión del útero"], "corr": "Ruptura de membranas (se rompió la fuente)", "bien": "¡Correcto! Has detectado el inicio de una gran etapa. Es momento de prepararse con calma para recibirlo.", "mal": "Es una confusión común, pero ese olor a cloro es la señal de que la 'casita' del bebé se abrió y es hora de buscar atención médica."},
+
+    {"q": "Si presentas un zumbido constante en los oídos (acúfenos), ¿qué nos intenta decir tu organismo?", "opts": ["Tu sangre fluye con demasiada presión", "Es una inflamación pasajera del oído"], "corr": "Tu sangre fluye con demasiada presión", "bien": "¡Perfecto! Estás muy sintonizada con tu salud. Ese pitido es la alarma de tu sistema circulatorio.", "mal": "Parece un simple ruido, pero es tu cuerpo hablándote. Significa que tu sangre está empujando con mucha fuerza y debemos bajar la presión."},
+
+    {"q": "Si notas que una pierna se hincha mucho más que la otra y te duele, ¿qué riesgo técnico evaluamos?", "opts": ["Posible coágulo o Trombosis Venosa", "Retención de líquidos común"], "corr": "Posible coágulo o Trombosis Venosa", "bien": "¡Brillante! Identificar estas diferencias salva vidas. Es vital asegurar que tu sangre fluya libremente.", "mal": "La hinchazón normal suele ser en ambas piernas. Si solo es en una, es una señal de alerta para cuidar tus venas de inmediato."},
+
+    {"q": "El ácido fólico es vital al inicio. ¿Qué estructura técnica ayuda a formar correctamente?", "opts": ["El tubo neural (cerebro y médula)", "Las cavidades principales del corazón"], "corr": "El tubo neural (cerebro y médula)", "bien": "¡Exacto! Eres la mejor arquitecta para el futuro de tu bebé, asegurando que su sistema nervioso crezca fuerte.", "mal": "Estamos aquí para aprender: el ácido fólico es el alimento principal para que el cerebro y la espalda de tu bebé se formen sanos."},
+
+    {"q": "Si presentas sangrado rojo brillante sin dolor, ¿qué condición técnica podría ser?", "opts": ["Placenta Previa (placenta mal ubicada)", "Un movimiento normal de encajamiento"], "corr": "Placenta Previa (placenta mal ubicada)", "bien": "¡Muy bien! Conocer esto te permite actuar rápido y con seguridad para proteger la vida de ambos.", "mal": "Cualquier sangrado genera temor, pero saber que puede ser la ubicación de la placenta nos ayuda a tratarlo a tiempo y con calma."},
+
+    {"q": "Si tu visión se vuelve borrosa de repente, ¿qué fenómeno técnico está ocurriendo?", "opts": ["Vasoespasmo por presión arterial alta", "Cansancio visual común"], "corr": "Vasoespasmo por presión arterial alta", "bien": "¡Excelente observación! Tu cuerpo te está enviando una señal visual crítica de que tu presión subió. ¡Bien por notar!", "mal": "No lo atribuyas solo al cansancio. Ver borroso es una forma en que tu cerebro te avisa que la presión está afectando tus vasos sanguíneos."},
+
+    {"q": "Dormir del lado izquierdo se recomienda porque...", "opts": ["Mejora el flujo de la vena cava hacia el bebé", "Ayuda a que el bebé duerma más tiempo"], "corr": "Mejora el flujo de la vena cava hacia el bebé", "bien": "¡Así se hace! Un pequeño cambio de postura que le da un gran respiro de oxígeno a tu pequeño.", "mal": "Parece algo simple, pero al dormir a la izquierda liberas una vena importante para que a tu bebé no le falte nada."},
+
+    {"q": "La Diabetes Gestacional eleva el azúcar. ¿Qué efecto técnico tiene en el bebé?", "opts": ["Macrosomía (crece demasiado)", "Restricción de crecimiento"], "corr": "Macrosomía (crece demasiado)", "bien": "¡Exacto! Mantener el azúcar bajo control asegura que tu bebé nazca con un peso saludable y sin complicaciones.", "mal": "El exceso de azúcar hace que el bebé crezca más de lo normal, lo que puede cansar su corazoncito. ¡Cuidar tu dieta es cuidarlo a él!"},
+
+    {"q": "¿Qué es técnicamente el 'Calostro'?", "opts": ["Leche rica en inmunoglobulinas y defensas", "Agua para hidratar al bebé los primeros días"], "corr": "Leche rica en inmunoglobulinas y defensas", "bien": "¡Amor puro en gotas! Le estás entregando su primera y más poderosa vacuna natural.", "mal": "Es mucho más que agua; es 'oro líquido' lleno de defensas para que tu bebé empiece la vida con fuerza."},
+
+    {"q": "Si tienes fiebre mayor a 38°C, ¿por qué es peligroso para el bebé?", "opts": ["Aumenta su frecuencia cardíaca y estrés", "Porque el bebé siente calor incómodo"], "corr": "Aumenta su frecuencia cardíaca y estrés", "bien": "¡Correcto! Eres el termostato de tu bebé. Mantenerte fresca lo mantiene a él tranquilo y seguro.", "mal": "Cuando tú tienes fiebre, el corazón del bebé late muy rápido y se estresa. Hay que bajarla por el bienestar de ambos."},
+
+    {"q": "La vitamina K se aplica al nacer para...", "opts": ["Prevenir hemorragias internas", "Ayudar a que el bebé vea mejor"], "corr": "Prevenir hemorragias internas", "bien": "¡Exacto! Es un pequeño pinchazo de prevención que asegura que su sangre sea fuerte y segura.", "mal": "Los recién nacidos necesitan un empujoncito de vitamina K para que su sangre pueda coagular bien y evitar riesgos."},
+
+    {"q": "¿Qué busca detectar técnicamente el tamizaje neonatal?", "opts": ["Enfermedades metabólicas ocultas", "El grupo sanguíneo del bebé"], "corr": "Enfermedades metabólicas ocultas", "bien": "¡Excelente previsión! Esta prueba es una ventana al futuro para asegurar un crecimiento sano.", "mal": "Es una prueba de oro que detecta problemas que no se ven por fuera, permitiéndonos actuar antes de que causen daño."},
+
+    {"q": "Si el médico menciona 'Polihidramnios', ¿a qué se refiere?", "opts": ["Exceso de líquido amniótico", "Falta de líquido amniótico"], "corr": "Exceso de líquido amniótico", "bien": "¡Muy bien! Conocer los términos médicos te da el poder de cuidar mejor tu entorno.", "mal": "Significa que hay un poquito más de líquido de lo normal. Solo requiere que estemos un poco más atentos."},
+
+    {"q": "Si notas flujo con mal olor o picazón, ¿por qué es importante tratarlo?", "opts": ["Evita que las bacterias rompan la bolsa", "Es solo por comodidad estética"], "corr": "Evita que las bacterias rompan la bolsa", "bien": "¡Correcto! Mantener tu salud íntima es mantener protegida la casita de tu bebé.", "mal": "Más que una molestia, las infecciones pueden debilitar la bolsa del bebé. Tratarlo a tiempo es protección pura."},
+
+    {"q": "¿Qué mide técnicamente el 'Test de Apgar' al nacer?", "opts": ["La vitalidad y adaptación del bebé", "El peso y la talla exacta"], "corr": "La vitalidad y adaptación del bebé", "bien": "¡Exacto! Es la primera calificación de vida de tu bebé, midiendo qué tan listo llegó al mundo.", "mal": "Es una evaluación rápida de sus reflejos y respiración para saber si necesita un poquito de ayuda al llegar."},
+
+    {"q": "Si sientes que el bebé está muy abajo y tienes presión en el pubis, ¿qué ocurre?", "opts": ["Encajamiento en el canal de parto", "Crecimiento de la placenta"], "corr": "Encajamiento en el canal de parto", "bien": "¡Qué emoción! Tu bebé se está acomodando para el gran encuentro. ¡Lo estás haciendo genial!", "mal": "Esa presión es tu bebé preparándose para salir. Se está ubicando en el lugar correcto para nacer."},
+
+    {"q": "¿Qué es el 'Vernix Caseosa' que cubre al bebé al nacer?", "opts": ["Grasa protectora de la piel y temperatura", "Restos de líquido que deben limpiarse"], "corr": "Grasa protectora de la piel y temperatura", "bien": "¡Exacto! Es la crema protectora más cara del mundo, hecha por tu propio cuerpo para él.", "mal": "No es suciedad, es una capa de grasita que protege su delicada piel y lo mantiene calientito."},
+
+    {"q": "Si el médico pide un 'Coombs indirecto', ¿qué revisa?", "opts": ["Compatibilidad de sangre madre-hijo", "Niveles de azúcar en ayunas"], "corr": "Compatibilidad de sangre madre-hijo", "bien": "¡Perfecto! Un paso más para asegurar que tu cuerpo y el de tu bebé convivan en total armonía.", "mal": "Es un examen para asegurar que tus defensas no ataquen la sangre del bebé. Es vital para su seguridad."},
+
+    {"q": "Si notas tu vientre rígido y dolor constante antes de la semana 37, ¿qué vigilamos?", "opts": ["Amenaza de Parto Prematuro", "Ejercicios de estiramiento fetal"], "corr": "Amenaza de Parto Prematuro", "bien": "¡Excelente alerta! Detectar esto a tiempo nos permite darle al bebé unos días más de madurez.", "mal": "Si el vientre se pone duro muy seguido antes de tiempo, el bebé podría querer salir antes de estar listo. ¡Consulta siempre!"},
+
+    {"q": "El ácido fólico debe tomarse idealmente...", "opts": ["Antes y durante el primer trimestre", "Solo en el último mes de embarazo"], "corr": "Antes y durante el primer trimestre", "bien": "¡Gran planificación! Preparaste el terreno para que tu bebé crezca con todas las herramientas.", "mal": "Lo ideal es desde antes de quedar embarazada, porque el sistema nervioso se forma en las primeras semanas de vida."},
+
+    {"q": "Si el médico realiza la 'Maniobra de Leopold', ¿qué está haciendo?", "opts": ["Palpando la posición del bebé", "Estimulando sus reflejos"], "corr": "Palpando la posición del bebé", "bien": "¡Correcto! Es como un mapa táctil para saber exactamente cómo está abrazado tu bebé por dentro.", "mal": "Es la forma en que el médico siente la posición de la cabecita y la espalda para planear un parto seguro."},
+
+    {"q": "¿Qué significa técnicamente tener 'Anemia' en el embarazo?", "opts": ["Falta de glóbulos rojos para llevar oxígeno", "Que tienes hambre constante"], "corr": "Falta de glóbulos rojos para llevar oxígeno", "bien": "¡Muy bien! Alimentar tu sangre es alimentar el oxígeno que le llega a tu pequeño.", "mal": "La anemia hace que te sientas cansada porque a tu sangre le cuesta llevar aire al bebé. ¡A comer hierro!"},
+
+    {"q": "Si sientes una patada muy fuerte y el vientre duele y queda rígido, ¿qué descartamos?", "opts": ["Desprendimiento de Placenta", "Un juego normal del bebé"], "corr": "Desprendimiento de Placenta", "bien": "¡Excelente! Saber esto salva vidas. Un dolor que no cede es una señal de actuar de inmediato.", "mal": "El dolor persistente con el vientre duro es una alerta seria. La placenta podría estar pidiendo ayuda urgente."},
+
+    {"q": "¿Qué es el 'Borramiento' del cuello uterino?", "opts": ["Adelgazamiento previo al parto", "Expulsión del tapón mucoso"], "corr": "Adelgazamiento previo al parto", "bien": "¡Exacto! Tu cuerpo se está haciendo suave y flexible para el paso de tu bebé.", "mal": "Es el proceso donde el cuello del útero se estira y se vuelve finito para permitir que el bebé nazca."},
+
+    {"q": "Si el bebé tiene el hipo dentro del vientre, ¿es normal?", "opts": ["Sí, entrena sus músculos respiratorios", "No, indica que le falta aire"], "corr": "Sí, entrena sus músculos respiratorios", "bien": "¡Disfrútalo! Esos saltitos son tu bebé practicando cómo respirar cuando esté en tus brazos.", "mal": "¡No te asustes! El hipo es señal de salud; significa que sus pulmones se están ejercitando con éxito."},
+
+    {"q": "¿Por qué no se debe consumir nada de alcohol?", "opts": ["Daña el desarrollo de neuronas del bebé", "Solo por el sabor amargo"], "corr": "Daña el desarrollo de neuronas del bebé", "bien": "¡Esa es la actitud! Tu sacrificio hoy es el regalo de una mente sana para tu hijo toda la vida.", "mal": "El alcohol llega directo al bebé y puede lastimar sus neuronas que están creciendo. ¡Mejor un juguito natural!"}
+
+]
+
+
+
+# --- SESIÓN ---
+
+if "fase" not in st.session_state:
+
+    st.session_state.update({"fase": "login", "user": "", "pts": 0, "idx": 0, "examen": [], "resp": False, "fb": "", "es_exito": True})
+
+
+
+# --- FLUJO ---
+
+if st.session_state.fase == "login":
+
+    if img_base64:
+
+        st.markdown(f'<div class="header-card"><img src="data:image/png;base64,{img_base64}" width="120"><h1>VIDA NUEVA</h1></div>', unsafe_allow_html=True)
+
+    
+
+    with st.form("login_unificado"):
+
+        st.markdown("<h2 style='text-align:center;'>Bienvenida al Curso de Cuidado Prenatal</h2>", unsafe_allow_html=True)
+
+        n = st.text_input("Nombre de la Mamá")
+
+        m = st.text_input("Correo para tu Certificado")
+
+        if st.form_submit_button("COMENZAR AHORA"):
+
+            if n and m:
+
+                st.session_state.user, st.session_state.examen, st.session_state.fase = n, random.sample(BANCO_PRO, 10), "test"
+
+                st.rerun()
+
+
+
+elif st.session_state.fase == "test":
+
+    actual = st.session_state.examen[st.session_state.idx]
+
+    st.markdown(f"**Pregunta {st.session_state.idx + 1} de 10**")
+
+    st.progress((st.session_state.idx + 1) / 10)
+
+    
+
+    st.markdown(f"<div class='question-card'><p class='question-text'>{actual['q']}</p></div>", unsafe_allow_html=True)
+
+    
+
+    sel = st.radio("Elige la opción correcta:", actual['opts'], key=f"r_{st.session_state.idx}", disabled=st.session_state.resp)
+
+
+
+    if not st.session_state.resp:
+
+        if st.button("CONFIRMAR"):
+
+            es_ok = (sel == actual['corr'])
+
+            st.session_state.update({"pts": st.session_state.pts + (10 if es_ok else 0), "fb": actual['bien'] if es_ok else actual['mal'], "es_exito": es_ok, "resp": True})
+
+            st.rerun()
+
+    else:
+
+        st.info(st.session_state.fb)
+
+        hablar(st.session_state.fb)
+
+        if st.button("SIGUIENTE"):
+
+            st.session_state.idx += 1
+
+            st.session_state.resp = False
+
+            if st.session_state.idx >= 10: st.session_state.fase = "final"
+
+            st.rerun()
+
+
+
+elif st.session_state.fase == "final":
+
+    st.balloons()
+
+    st.markdown(f"<div class='header-card'><h1>¡Felicidades, {st.session_state.user}!</h1></div>", unsafe_allow_html=True)
+
+    st.metric("Puntaje Final", f"{st.session_state.pts}/100")
+
+    if st.button("REPETIR"):
+
+        st.session_state.clear()
+
+        st.rerun()
