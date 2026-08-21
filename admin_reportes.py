@@ -548,28 +548,83 @@ with tab_descargas:
     if filtrados.empty:
         st.warning("No hay datos que coincidan con los filtros seleccionados.")
     else:
-        try:
-            excel = generar_reporte("xlsx", payload_json)
-            pdf = generar_reporte("pdf", payload_json)
+        st.caption(
+            "Prepara únicamente el formato que necesites. El panel no genera "
+            "archivos automáticamente al abrirse."
+        )
+        d1, d2 = st.columns(2)
 
-            d1, d2 = st.columns(2)
+        with d1:
+            if st.button(
+                "PREPARAR EXCEL",
+                key="preparar_reporte_excel",
+                width="stretch",
+            ):
+                try:
+                    with st.spinner("Preparando el archivo Excel..."):
+                        datos_excel = generar_reporte("xlsx", payload_json)
 
-            with d1:
+                    st.session_state.reporte_excel = {
+                        "payload": payload_json,
+                        "datos": datos_excel,
+                    }
+                except Exception:
+                    st.session_state.pop("reporte_excel", None)
+                    st.error(
+                        "No se pudo preparar Excel en este servidor. "
+                        "Puedes descargar los mismos registros en CSV, "
+                        "compatible con Excel."
+                    )
+
+            reporte_excel = st.session_state.get("reporte_excel", {})
+
+            if reporte_excel.get("payload") == payload_json:
                 st.download_button(
                     "DESCARGAR EXCEL",
-                    data=excel,
+                    data=reporte_excel["datos"],
                     file_name="registro_usuarios_ranking.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     width="stretch",
                 )
 
-            with d2:
+            csv_excel = filtrados.copy()
+            csv_excel["Fecha"] = csv_excel["Fecha"].apply(serializar_fecha)
+            st.download_button(
+                "DESCARGAR DATOS PARA EXCEL (.CSV)",
+                data=csv_excel.to_csv(index=False).encode("utf-8-sig"),
+                file_name="registro_usuarios_ranking.csv",
+                mime="text/csv",
+                width="stretch",
+            )
+
+        with d2:
+            if st.button(
+                "PREPARAR PDF",
+                key="preparar_reporte_pdf",
+                width="stretch",
+            ):
+                try:
+                    with st.spinner("Preparando el archivo PDF..."):
+                        datos_pdf = generar_reporte("pdf", payload_json)
+
+                    st.session_state.reporte_pdf = {
+                        "payload": payload_json,
+                        "datos": datos_pdf,
+                    }
+                except Exception:
+                    st.session_state.pop("reporte_pdf", None)
+                    st.error(
+                        "No se pudo preparar el PDF en este servidor. "
+                        "Inténtalo nuevamente o actualiza los registros."
+                    )
+
+            reporte_pdf = st.session_state.get("reporte_pdf", {})
+
+            if reporte_pdf.get("payload") == payload_json:
                 st.download_button(
                     "DESCARGAR PDF",
-                    data=pdf,
+                    data=reporte_pdf["datos"],
                     file_name="registro_usuarios_ranking.pdf",
                     mime="application/pdf",
                     width="stretch",
                 )
-        except Exception as error:
-            st.error(f"No se pudieron preparar las descargas: {error}")
