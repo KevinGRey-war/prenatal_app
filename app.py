@@ -9,8 +9,6 @@ import os
 import html
 import sqlite3
 
-from admin_auth import clave_administrativa_valida
-
 # =========================================================
 # 💾 ALMACENAMIENTO DEL RANKING
 # =========================================================
@@ -336,7 +334,9 @@ div[data-baseweb="select"] svg{
     color:var(--pink) !important;
 }
 
-div.stButton > button{
+div.stButton > button,
+div.stLinkButton > a,
+[data-testid="stLinkButton"] a{
     background:linear-gradient(135deg, var(--pink), #F973B7) !important;
     color:white !important;
     border:none !important;
@@ -351,13 +351,17 @@ div.stButton > button{
     transition:transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-div.stButton > button:hover{
+div.stButton > button:hover,
+div.stLinkButton > a:hover,
+[data-testid="stLinkButton"] a:hover{
     transform:translateY(-1px);
     filter:saturate(1.06);
     box-shadow:0 16px 34px rgba(236,72,153,0.34);
 }
 
-div.stButton > button:active{
+div.stButton > button:active,
+div.stLinkButton > a:active,
+[data-testid="stLinkButton"] a:active{
     transform:translateY(0);
 }
 
@@ -565,7 +569,9 @@ div.stButton > button:active{
         font-size:1.08rem !important;
     }
 
-    div.stButton > button{
+    div.stButton > button,
+    div.stLinkButton > a,
+    [data-testid="stLinkButton"] a{
         min-height:64px !important;
         border-radius:18px !important;
     }
@@ -966,48 +972,13 @@ if st.session_state.fase == "login":
             unsafe_allow_html=True
         )
 
-        if st.button(
+        st.link_button(
             "🔐 ENTRAR AL PANEL ADMINISTRATIVO",
-            key="abrir_panel_admin",
+            "/panel_admin",
+            help="Abrir la verificación administrativa en una pestaña nueva",
             type="secondary",
-            use_container_width=True
-        ):
-            if st.session_state.get("admin_autenticado"):
-                st.switch_page("pages/panel_admin.py")
-
-            st.session_state.mostrar_acceso_admin = not st.session_state.get(
-                "mostrar_acceso_admin",
-                False
-            )
-            st.rerun()
-
-        if st.session_state.get("mostrar_acceso_admin", False):
-            st.markdown("""
-            <div class='login-note' style='border-left-color:#C62828'>
-                Acceso administrativo
-                <span>Ingresa la contraseña para consultar registros y reportes.</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-            with st.form("acceso_admin_desde_inicio", clear_on_submit=True):
-                clave_admin = st.text_input(
-                    "Contraseña administrativa",
-                    type="password",
-                    placeholder="Ingresa la contraseña del panel"
-                )
-
-                entrar_admin = st.form_submit_button(
-                    "INGRESAR A REGISTROS Y REPORTES",
-                    use_container_width=True
-                )
-
-            if entrar_admin:
-                if clave_administrativa_valida(clave_admin):
-                    st.session_state.admin_autenticado = True
-                    st.session_state.mostrar_acceso_admin = False
-                    st.switch_page("pages/panel_admin.py")
-                else:
-                    st.error("Contraseña administrativa incorrecta.")
+            width="stretch"
+        )
 
 # =========================================================
 # TEST
