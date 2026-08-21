@@ -1,0 +1,26 @@
+# Entornos y cachés
+venv/
+__pycache__/
+*.py[cod]
+.idea/
+
+# Compilaciones y temporales
+build/
+dist/
+tmp/
+output/
+outputs/
+admin_exports/node_modules/
+*.inspect.ndjson
+
+# Datos y credenciales locales
+*.db
+!ranking.db
+*.sqlite*
+.streamlit/secrets.toml
+plantilla.txt
+*.rar
+
+# Sistema operativo
+Thumbs.db
+desktop.ini
