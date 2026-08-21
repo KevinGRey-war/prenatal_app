@@ -185,36 +185,41 @@ def exigir_autenticacion():
     autenticacion_exitosa = False
 
     with acceso.container():
-        st.markdown(
-            """
-            <div class="admin-header">
-                <h1>Acceso administrativo</h1>
-                <p>Panel protegido para consultar registros y exportar reportes.</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        _, columna_acceso, _ = st.columns([1, 1.7, 1])
 
-        with st.form("acceso_admin", clear_on_submit=True):
-            clave_ingresada = st.text_input(
-                "Contraseña de administración",
-                type="password",
-                placeholder="Ingresa la contraseña definida al iniciar el panel",
-            )
-            ingresar = st.form_submit_button(
-                "INGRESAR AL PANEL",
-                width="stretch",
+        with columna_acceso:
+            st.markdown(
+                """
+                <div class="admin-header" style="text-align:center">
+                    <h1>🔐 Acceso administrativo</h1>
+                    <p>Verifica la contraseña para consultar registros, ranking y reportes.</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
 
-        if ingresar:
-            if clave_administrativa_valida(
-                clave_ingresada,
-                clave_configurada,
-            ):
-                st.session_state.admin_autenticado = True
-                autenticacion_exitosa = True
-            else:
-                st.error("Contraseña incorrecta.")
+            with st.form("acceso_admin", clear_on_submit=True):
+                clave_ingresada = st.text_input(
+                    "Contraseña de administración",
+                    type="password",
+                    placeholder="Ingresa la contraseña administrativa",
+                )
+                ingresar = st.form_submit_button(
+                    "VERIFICAR Y ENTRAR",
+                    width="stretch",
+                )
+
+            if ingresar:
+                if clave_administrativa_valida(
+                    clave_ingresada,
+                    clave_configurada,
+                ):
+                    st.session_state.admin_autenticado = True
+                    autenticacion_exitosa = True
+                else:
+                    st.error(
+                        "Contraseña incorrecta. El acceso permanece bloqueado."
+                    )
 
     if autenticacion_exitosa:
         acceso.empty()

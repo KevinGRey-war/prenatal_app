@@ -365,6 +365,49 @@ div.stLinkButton > a:active,
     transform:translateY(0);
 }
 
+.admin-access-copy{
+    max-width:560px;
+    margin:14px auto 10px;
+    padding:16px 20px;
+    text-align:center;
+    color:var(--muted);
+    background:rgba(255,255,255,0.82);
+    border:1px solid rgba(201,162,39,0.34);
+    border-radius:20px;
+    box-shadow:0 12px 30px rgba(36,50,75,0.08);
+}
+
+.admin-access-copy strong{
+    display:block;
+    color:var(--ink);
+    font-size:1.04rem;
+    margin-bottom:4px;
+}
+
+.admin-access-copy span{
+    display:block;
+    font-size:0.94rem;
+    line-height:1.45;
+}
+
+div[data-testid="stLinkButton"]{
+    width:min(100%, 480px);
+    margin:0 auto 18px;
+}
+
+div[data-testid="stLinkButton"] a{
+    min-height:66px !important;
+    background:linear-gradient(135deg, #991B1B, #C62828 55%, #E23D55) !important;
+    border:1px solid rgba(201,162,39,0.75) !important;
+    border-radius:18px !important;
+    box-shadow:0 15px 30px rgba(153,27,27,0.24), 0 0 0 4px rgba(201,162,39,0.08) !important;
+}
+
+div[data-testid="stLinkButton"] a:hover{
+    background:linear-gradient(135deg, #7F1D1D, #B91C1C 55%, #D92F4C) !important;
+    box-shadow:0 18px 34px rgba(153,27,27,0.30), 0 0 0 4px rgba(201,162,39,0.14) !important;
+}
+
 [data-testid="stMetric"]{
     background:rgba(255,255,255,0.9);
     border:1px solid var(--line);
@@ -972,10 +1015,17 @@ if st.session_state.fase == "login":
             unsafe_allow_html=True
         )
 
+        st.markdown("""
+        <div class='admin-access-copy'>
+            <strong>🔐 Acceso administrativo protegido</strong>
+            <span>La contraseña se verificará en una pantalla separada antes de mostrar los reportes.</span>
+        </div>
+        """, unsafe_allow_html=True)
+
         st.link_button(
             "🔐 ENTRAR AL PANEL ADMINISTRATIVO",
             "/panel_admin",
-            help="Abrir la verificación administrativa en una pestaña nueva",
+            help="Abrir la pantalla protegida de verificación",
             type="secondary",
             width="stretch"
         )
