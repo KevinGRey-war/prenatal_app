@@ -9,6 +9,8 @@ import os
 import html
 import sqlite3
 
+from admin_auth import clave_administrativa_valida
+
 # =========================================================
 # 💾 ALMACENAMIENTO DEL RANKING
 # =========================================================
@@ -970,7 +972,42 @@ if st.session_state.fase == "login":
             type="secondary",
             use_container_width=True
         ):
-            st.switch_page("pages/panel_admin.py")
+            if st.session_state.get("admin_autenticado"):
+                st.switch_page("pages/panel_admin.py")
+
+            st.session_state.mostrar_acceso_admin = not st.session_state.get(
+                "mostrar_acceso_admin",
+                False
+            )
+            st.rerun()
+
+        if st.session_state.get("mostrar_acceso_admin", False):
+            st.markdown("""
+            <div class='login-note' style='border-left-color:#C62828'>
+                Acceso administrativo
+                <span>Ingresa la contraseña para consultar registros y reportes.</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+            with st.form("acceso_admin_desde_inicio", clear_on_submit=True):
+                clave_admin = st.text_input(
+                    "Contraseña administrativa",
+                    type="password",
+                    placeholder="Ingresa la contraseña del panel"
+                )
+
+                entrar_admin = st.form_submit_button(
+                    "INGRESAR A REGISTROS Y REPORTES",
+                    use_container_width=True
+                )
+
+            if entrar_admin:
+                if clave_administrativa_valida(clave_admin):
+                    st.session_state.admin_autenticado = True
+                    st.session_state.mostrar_acceso_admin = False
+                    st.switch_page("pages/panel_admin.py")
+                else:
+                    st.error("Contraseña administrativa incorrecta.")
 
 # =========================================================
 # TEST
