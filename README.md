@@ -14,7 +14,7 @@ La aplicación se abre en `http://127.0.0.1:8501`.
 ## Panel administrativo
 
 El botón **Entrar al panel administrativo** aparece en la pantalla inicial y abre
-la verificación en una pestaña nueva. Después de validar la contraseña, el panel
+la verificación en la misma pestaña. Después de validar la contraseña, el panel
 permite consultar registros, revisar el ranking y descargar reportes en Excel,
 CSV compatible con Excel y PDF. El panel usa la variable o secreto
 `ADMIN_PASSWORD` cuando está configurada.

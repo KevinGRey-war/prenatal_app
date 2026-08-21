@@ -334,9 +334,7 @@ div[data-baseweb="select"] svg{
     color:var(--pink) !important;
 }
 
-div.stButton > button,
-div.stLinkButton > a,
-[data-testid="stLinkButton"] a{
+div.stButton > button{
     background:linear-gradient(135deg, var(--pink), #F973B7) !important;
     color:white !important;
     border:none !important;
@@ -351,17 +349,13 @@ div.stLinkButton > a,
     transition:transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-div.stButton > button:hover,
-div.stLinkButton > a:hover,
-[data-testid="stLinkButton"] a:hover{
+div.stButton > button:hover{
     transform:translateY(-1px);
     filter:saturate(1.06);
     box-shadow:0 16px 34px rgba(236,72,153,0.34);
 }
 
-div.stButton > button:active,
-div.stLinkButton > a:active,
-[data-testid="stLinkButton"] a:active{
+div.stButton > button:active{
     transform:translateY(0);
 }
 
@@ -390,12 +384,12 @@ div.stLinkButton > a:active,
     line-height:1.45;
 }
 
-div[data-testid="stLinkButton"]{
+.st-key-abrir_panel_admin{
     width:min(100%, 480px);
     margin:0 auto 18px;
 }
 
-div[data-testid="stLinkButton"] a{
+.st-key-abrir_panel_admin button{
     min-height:66px !important;
     background:linear-gradient(135deg, #991B1B, #C62828 55%, #E23D55) !important;
     border:1px solid rgba(201,162,39,0.75) !important;
@@ -403,7 +397,7 @@ div[data-testid="stLinkButton"] a{
     box-shadow:0 15px 30px rgba(153,27,27,0.24), 0 0 0 4px rgba(201,162,39,0.08) !important;
 }
 
-div[data-testid="stLinkButton"] a:hover{
+.st-key-abrir_panel_admin button:hover{
     background:linear-gradient(135deg, #7F1D1D, #B91C1C 55%, #D92F4C) !important;
     box-shadow:0 18px 34px rgba(153,27,27,0.30), 0 0 0 4px rgba(201,162,39,0.14) !important;
 }
@@ -612,9 +606,7 @@ div[data-testid="stLinkButton"] a:hover{
         font-size:1.08rem !important;
     }
 
-    div.stButton > button,
-    div.stLinkButton > a,
-    [data-testid="stLinkButton"] a{
+    div.stButton > button{
         min-height:64px !important;
         border-radius:18px !important;
     }
@@ -1018,17 +1010,18 @@ if st.session_state.fase == "login":
         st.markdown("""
         <div class='admin-access-copy'>
             <strong>🔐 Acceso administrativo protegido</strong>
-            <span>La contraseña se verificará en una pantalla separada antes de mostrar los reportes.</span>
+            <span>La contraseña se verificará en esta misma pestaña antes de mostrar los reportes.</span>
         </div>
         """, unsafe_allow_html=True)
 
-        st.link_button(
+        if st.button(
             "🔐 ENTRAR AL PANEL ADMINISTRATIVO",
-            "/panel_admin",
-            help="Abrir la pantalla protegida de verificación",
+            key="abrir_panel_admin",
+            help="Continuar a la pantalla protegida de verificación",
             type="secondary",
             width="stretch"
-        )
+        ):
+            st.switch_page("pages/panel_admin.py")
 
 # =========================================================
 # TEST
